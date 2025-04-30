@@ -3,12 +3,12 @@ import argparse
 import re
 
 print(r"""
-  ____                 _     _____                  
- / ___|_ __ __ _ _ __ | |__ |  ___|__  _ __ ___ ___ 
+  ____                 _     _____
+ / ___|_ __ __ _ _ __ | |__ |  ___|__  _ __ ___ ___
 | |  _| '__/ _` | '_ \| '_ \| |_ / _ \| '__/ __/ _ \
 | |_| | | | (_| | |_) | | | |  _| (_) | | | (_|  __/
  \____|_|  \__,_| .__/|_| |_|_|  \___/|_|  \___\___|
-                |_|                                 
+                |_|
             GraphQL Suggestion Brute Forcer
                   Coded by Tal3at
 """)
@@ -75,22 +75,22 @@ try:
         try:
             response = requests.post(url, headers=headers, data=mutated_body.encode())
 
-            # Capture Unknown field
-            match1 = re.search(r"Unknown field '([^']+)'", response.text)
-            if match1:
-                found = match1.group(1)
+            # Capture all "Unknown field" suggestions
+            unknown_fields = re.findall(r"Unknown field '([^']+)'", response.text)
+            for found in unknown_fields:
                 if found not in suggestions:
                     suggestions.add(found)
+                    print(f"[+] Suggestion found: {found}")
 
-            # Improved: Capture all "Did you mean" suggestions
-            match2 = re.search(r'Did you mean ([^?]+)\?', response.text)
-            if match2:
-                suggestions_str = match2.group(1)
+            # Capture all "Did you mean" suggestions
+            did_you_mean_matches = re.findall(r'Did you mean ([^?]+)\?', response.text)
+            for suggestions_str in did_you_mean_matches:
                 found_suggestions = re.findall(r'"([^"]+)"|(\w+)', suggestions_str)
                 for match in found_suggestions:
                     found = match[0] if match[0] else match[1]
                     if found and found not in suggestions:
                         suggestions.add(found)
+                        print(f"[+] Suggestion found: {found}")
 
         except Exception as e:
             print(f"[-] Error: {e}")
@@ -100,14 +100,10 @@ except KeyboardInterrupt:
 
 finally:
     if suggestions:
-        # Clean up suggestions before saving them
         cleaned_suggestions = [item.strip("\\") for item in suggestions]
-
         with open("results.txt", "w") as f:
             for item in sorted(cleaned_suggestions):
                 f.write(item + "\n")
-
         print(f"\n[✔] Done! {len(cleaned_suggestions)} suggestions saved to results.txt.")
     else:
         print("[!] No suggestions found.")
-
